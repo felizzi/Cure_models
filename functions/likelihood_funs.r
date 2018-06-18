@@ -1,11 +1,10 @@
-
+### likelihood function for
 ll.mix <- function(table, parms, time_col, cen_col, rate_col, obj){  
-  time_v <- as.numeric(table[,time_col])/12;
+  time_v <- as.numeric(table[,time_col]);
   cen_v <- as.numeric(table[,cen_col]);
   rate_v <- as.numeric(table[,rate_col]);
   pi_ <- parms[length(parms)];
   
-  #shape <- parms[1];  scale <- parms[2]; pi_ <- parms[3];  
   f_t <- do.call(obj$dfns$d, args = c(as.list(parms[1:length(parms)-1]),
                                       list (x = time_v, log = FALSE))
   )

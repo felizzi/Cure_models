@@ -37,12 +37,12 @@
   #hazard and survival functions
   
   rate_c_years <- function(years, table){
-    
+    table$qx <- as.numeric(table$qx)
     yr_l <- floor(years)
     yr_h <- ceiling(years)
     if ( yr_l != yr_h){
-      s_h <- table$qx[yr_h + 2]
-      s_l <- table$qx[yr_h+1]
+      s_h <- table$qx[yr_h + 2] # starting year is 0
+      s_l <- table$qx[yr_h + 1] 
       value <- (s_h - s_l)*(years - yr_l) + s_l
     }else{
       value <- table$qx[yr_h+1]
