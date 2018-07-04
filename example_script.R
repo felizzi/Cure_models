@@ -50,3 +50,5 @@ for (i in 1:length(models)){
   est_cure$AIC[i] <- 2*(length(fsr_use) + 1) + 2*opt_obj_[[i]]$value
   est_cure$BIC[i] <- (length(fsr_use) + 1)*log(fsr_fits_[[i]]$N)  + 2*opt_obj_[[i]]$value
 }
+
+## print tables with AIC, cure proportion, upper and lower confidence intervals 
