@@ -75,6 +75,7 @@ Surv_c_years <- function(years, table){
     value <- table$lx[yr_h+1]/1e5
   }
   if (yr_h > 109){ value <- 0 }
+  print(paste0("value = ", value))
   return(value)
 }
 
@@ -83,6 +84,7 @@ Surv_c_years <- function(years, table){
 Surv_cv_years <- function(years, table){
   n <- length(years);
   v_ret <- rep(0, length(years));
+  print("Surv cv invoked")
   for (i in 1:n){
     v_ret[i] <- Surv_c_years(years[i], table = table);
   }
