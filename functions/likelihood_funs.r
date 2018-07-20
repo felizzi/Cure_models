@@ -19,7 +19,7 @@ ll.mix <- function(table, parms, time_col, cen_col, rate_col, obj){
 
 
 ll.mix_f <- function(table, parms, pi_, time_col, cen_col, rate_col, obj){  
-  time_v <- as.numeric(table[,time_col])/12;
+  time_v <- as.numeric(table[,time_col]);
   cen_v <- as.numeric(table[,cen_col]);
   rate_v <- as.numeric(table[,rate_col]);
   #pi_ <- parms[length(parms)];

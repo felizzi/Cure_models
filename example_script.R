@@ -38,7 +38,7 @@ St_base_models_cures <- list()
 est_cure <- data.frame(function_type = character(N_m), cure_rate = numeric(N_m), stderr = numeric(N_m), lower.ci = numeric(N_m), upper.ci = numeric(N_m), AIC = numeric(N_m), BIC = numeric(N_m), stringsAsFactors = FALSE)
 
 #define the general purpose ll.mix function 
-
+KM <- survfit(Surv(as.numeric(TIME), CNSR)~1, data = trial_data)
 
 for (i in 1:length(models)){
   #perform the fits
@@ -85,13 +85,13 @@ write.csv(est_cure, file = "reports/est_cures.csv")
 ### create a plot fo the various fits 
 
 pdf("reports/cure_parametric_fits.pdf")
-plot(fsr_fits_[[1]], est =F, xlim = c(0,10), lwd.ci = 0, ci = F, lwd.obs = 5, xlab = "Time (years)")
+plot(KM, conf.int =F, lwd = 5, xlab = "Time (years)", xlim = c(0,10), lty = 2)
 for (i in 1:7){
 
-  lines(xty, y_models_cures[[i]], col = palette()[i+1], lwd = 4)  
+  lines(xty, y_models_cures[[i]], col = palette()[i+1], lwd = 2)  
 }
-lines(fsr_fits_[[1]], est =F, lwd.ci = 0, ci = F, lwd.obs = 4)
-legend("topright", models[1:7],col = palette()[2:8], lwd = 4 )
+lines(KM, conf.int =F, lwd = 5, xlab = "Time (years)",lty = 2)
+legend("topright", models[1:7],col = palette()[2:8], lwd = 4  )
 dev.off()
 
 St_ <- do.call(fsr_fits_exp$dfns$p, args = c(as.list(obj_$par[1:(len)]),list(q = xty, lower.tail = FALSE)))
