@@ -1,5 +1,6 @@
 ### script for the second example, namely with the addition of an external-input cure 
-
+require(flexsurv)
+require(MASS)
 trial_data <- read.csv(paste0("libraries/example_1.csv"))
 source("hazard_script.R")
 source("functions/likelihood_funs.r")
@@ -15,6 +16,7 @@ trial_data$rate_mod <- hazard_out$rate_vec
 
 #surv_mean <- colSums(hazard_out$surv_mat, na.rm = T)/
 surv_mean <- colSums(hazard_out$surv_mat, na.rm = T)/length(which(!is.na(hazard_out$surv_mat[,1])))
+xty <- hazard_out$xty
 
 models <- c("exponential", "weibull", "llogis", "lognormal", "gompertz", "gamma", "gengamma")
 cure_vals <- c(0,0.01,0.02,0.03,0.04,0.05,0.1,0.15,0.2)
@@ -152,9 +154,9 @@ for (i in 1:length(models)){
   #createSheet(wb, name = models[i])
   #writing into sheets within an Excel workbook : 
   #writing ChickWeight data frame into chickSheet
-  #write.csv(Atezo_fits_f1, file= paste(wd,"/",out_fold,"/","Fit_cure_atezo_",models[i],"_",subg,"_norway.csv",sep = ""))
+  write.csv(fits_f1, file= paste("reports/cures_AIC.csv",sep = ""))
   #writeWorksheet(wb, Atezo_fits_f, sheet = models[i], startRow = 1, startCol = 1)
   #saveWorkbook(wb)
   
-  #dev.off()
+  dev.off()
 }
