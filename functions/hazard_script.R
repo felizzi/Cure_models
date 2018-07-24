@@ -1,124 +1,146 @@
-#### function to build the hazard for the subject and the residual survival curves for each subject
-#### it takes as input 
-#### the data frame with the info
-#### the event time colum --- in years 
-#### the colum with the gender of the subject M/F 
-#### the year  in which the subject enetered the 
-country_map <- new.env(hash=T, parent=emptyenv())
+########################################
+# Hazards and residual survival curves #
+########################################
+
+################################################################################
+# Function to build hazard and residual survival curves for each subject, using
+#  - Data frame with demographic and other required information
+#  - Event times (in years)
+#  - Gender (female [F] or male [M])
+#  - Year during which the subject entered the study/follow-up period
+################################################################################
+
+# Clean and set up countries (background mortality is country-specific)
+
+## Preparing the environment for country data
+country_map <- new.env(hash = TRUE, parent = emptyenv())
 c_mort_list <- read.csv("libraries/CountryList.csv")
-for (i in 1:length(c_mort_list$Code)){
+
+### Store country names in environment prepared above
+for (i in 1:length(c_mort_list$Code)) {
   country_use <- as.character(c_mort_list$Code3[i])
   country_map[[country_use]] <- as.character(c_mort_list$Country[i])
 }
-## add additional keys to the map NED SUI GER
+## For Germany, the Netherlands and Switzerland, country codes must be changed
 country_map[["SUI"]] <- "Switzerland"
 country_map[["NED"]] <- "Netherlands"
 country_map[["GER"]] <- "Germany"
+
+## Calculating the hazard, using country-specific life tables
 source("functions/functions_long_term_survival.r")
-hazard_time <- function(table_, evttme, sex, age, year, country_trial, country_output){
-  # load in the file the tables 
-  ## loop over the countries in the trial 
-  Np <- length(table_[,sex]) ## number of rows in the datatable
-  
-  #rate_vec <- matrix(,nrow = Np, ncol = 1);
-  rate_vec <- matrix(,nrow = Np, ncol = 1);
-  surv_vec <- matrix(,nrow = Np, ncol = 1);
-  
-  xty <-seq(0,30, by = 0.2) ## timespan -- 30 years 
-  surv_mat <- matrix(,nrow = Np, ncol = length(xty));
-  
+
+hazard_time <- function(table_, evttme, sex, age, year, country_trial,
+                        country_output) {
+  # Load tables and loop over countries relevant for the trial
+  Np <- length(table_[, sex]) # number of rows in the datatable
+  rate_vec <- matrix(data = NA, nrow = Np, ncol = 1)
+  surv_vec <- matrix(data = NA, nrow = Np, ncol = 1)
+
+  xty <- seq(from = 0, to = 30, by = 0.2) # timespan -- 30 years
+  surv_mat <- matrix(data = NA, nrow = Np, ncol = length(xty))
+
   Nxty <- length(xty)
-  #surv_mean_table_all <- data.frame(week = numeric(Nxty), residual_surv = numeric(Nxty))
-  surv_mean_table <- data.frame(week = numeric(Nxty), residual_surv = numeric(Nxty))
-  
-  for (i in 1:Np){ ### loop over the subjects in the trial 
-    ## manual adaptations of the country-codes
-    country_in_use <- as.character(table_[i,country_trial])
-    year_in_use   <- table_[i, year]
-    gender_in_use <- table_[i,sex]
-    
-    
-    ## load the tables 
-    if (gender_in_use == "MALE" | gender_in_use == "M"){
-      table_in_use <- read.csv(paste0("libraries/",country_map[[country_in_use]],"/Male/Mortality.csv", sep = ""))
-      max_year <- max(table_in_use$Year) ## selection of the max year in case the year in the trial is missing
-      if (year_in_use > max_year){ year_in_use <- max_year}
+  surv_mean_table <- data.frame(week = numeric(Nxty),
+                                residual_surv = numeric(Nxty))
+
+  # For each subject in the trial  
+  for (i in 1:Np) {
+    country_in_use <- as.character(table_[i, country_trial])
+    year_in_use    <- table_[i, year]
+    gender_in_use  <- table_[i, sex]
+
+    ## Load background mortality tables
+    ### For men
+    if (gender_in_use == "MALE" | gender_in_use == "M") {
+      table_in_use <- read.csv(paste0("libraries/",
+                                      country_map[[country_in_use]],
+                                      "/Male/Mortality.csv", sep = ""))
+      #Select the latest year in case the year in the trial is missing
+      max_year <- max(table_in_use$Year) 
+      if (year_in_use > max_year) {
+        year_in_use <- max_year
+      }
       table_in_use <- subset(table_in_use, Year == year_in_use)
-      rate_vec[i] <- rate_c_years(as.numeric(table_[i,age]) + as.numeric(table_[i,evttme]), table_in_use);
-      scvy_all <- Surv_cv_years( as.numeric(table_[i,age]) + xty, table_in_use);
-      if( length(is.na(scvy_all) > 0 )){ print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year missing in table")  )}
+      rate_vec[i]  <- rate_c_years(as.numeric(table_[i, age]) + 
+                                     as.numeric(table_[i, evttme]),
+                                   table_in_use)
+      scvy_all <- Surv_cv_years(as.numeric(table_[i, age]) + xty, table_in_use)
       
-      if ( is.na(rate_vec[i] )){
-        if (length(table_in_use$Year) == 0){
-          print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year missing in table")  )
-        }else{
-          print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year present in table")  )
+      # Print messages if a year is not available
+      if (length(is.na(scvy_all) > 0)) {
+        print(paste(country_in_use, ": ", country_map[[country_in_use]], "; ",
+                    gender_in_use, ": ", table_[i, evttme], "; ",
+                    year_in_use, ": ", table_[i, age], " | ",
+                    "year missing in table"))
+      }
+
+      if (is.na(rate_vec[i])) {
+        if (length(table_in_use$Year) == 0) {
+          print(paste(country_in_use, ": ", country_map[[country_in_use]], "; ",
+                      gender_in_use, ": ", table_[i, evttme], "; ",
+                      year_in_use, ": ", table_[i, age], " | ",
+                      "year missing in table"))
+        } else {
+          print(paste(country_in_use, ": ", country_map[[country_in_use]], "; ",
+                      gender_in_use, ": ", table_[i, evttme], "; ",
+                      year_in_use, ": ", table_[i, age], " | ",
+                      "year present in table"))
         }
       }
     }
-    if (gender_in_use == "FEMALE" | gender_in_use == "F"){
-      table_in_use <- read.csv(paste0("libraries/",country_map[[country_in_use]],"/Female/Mortality.csv", sep = ""))
-      max_year <- max(table_in_use$Year) ## selection of the max year in case the year in the trial is missing
-      if (year_in_use > max_year){ year_in_use <- max_year}
+    
+    ### For women
+    if (gender_in_use == "FEMALE" | gender_in_use == "F") {
+      table_in_use <- read.csv(paste0("libraries/",
+                                      country_map[[country_in_use]],
+                                      "/Female/Mortality.csv", sep = ""))
+      #Select the latest year in case the year in the trial is missing
+      max_year <- max(table_in_use$Year) 
+      if (year_in_use > max_year) {
+        year_in_use <- max_year
+      }
       table_in_use <- subset(table_in_use, Year == year_in_use)
-      rate_vec[i] <- rate_c_years(as.numeric(table_[i,age]) + as.numeric(table_[i,evttme]), table_in_use);
+      rate_vec[i]  <- rate_c_years(as.numeric(table_[i, age]) + 
+                                     as.numeric(table_[i, evttme]),
+                                   table_in_use)
+      scvy_all <- Surv_cv_years(as.numeric(table_[i, age]) + xty, table_in_use)
       
-      scvy_all <- Surv_cv_years( as.numeric(table_[i,age]) + xty, table_in_use);
-      if( length(is.na(scvy_all) > 0 )){ print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year missing in table")  )}
-      if ( is.na(rate_vec[i] )){
-        if (length(table_in_use$Year) == 0){
-          print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year missing in table")  )
-        }else{
-          print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year present in table")  )
+      # Print messages if a year is not available
+      if (length(is.na(scvy_all) > 0)) {
+        print(paste(country_in_use, ": ", country_map[[country_in_use]], "; ",
+                    gender_in_use, ": ", table_[i, evttme], "; ",
+                    year_in_use, ": ", table_[i, age], " | ",
+                    "year missing in table"))
+      }
+      
+      if (is.na(rate_vec[i])) {
+        if (length(table_in_use$Year) == 0) {
+          print(paste(country_in_use, ": ", country_map[[country_in_use]], "; ",
+                      gender_in_use, ": ", table_[i, evttme], "; ",
+                      year_in_use, ": ", table_[i, age], " | ",
+                      "year missing in table"))
+        } else {
+          print(paste(country_in_use, ": ", country_map[[country_in_use]], "; ",
+                      gender_in_use, ": ", table_[i, evttme], "; ",
+                      year_in_use, ": ", table_[i, age], " | ",
+                      "year present in table"))
         }
       }
     }
-    surv_mat[i,] <- scvy_all/scvy_all[1];
-    #  print("MALE")
-      #rate_vec[i] <- rate_c_years(as.numeric(table_[i,age]) + as.numeric(table_[i,evttme])/365.25, table_in_use_M);
-  #    rate_vec_USA[i] <- rate_c_years(as.numeric(table_[i,age]) + as.numeric(table_[i,evttme])/12, USA_table_male_2013)
-   #   surv_vec_USA[i] <- Surv_c_years(as.numeric(table_[i,age]) + as.numeric(table_[i,evttme])/12, USA_table_male_2013)/Surv_c_years(as.numeric(table_[i,age]), USA_table_male_2013)
-      #scvy_all <- Surv_cv_years( as.numeric(table_[i,age]) + xty, table_in_use_M);
-  #    scvy_usa <- Surv_cv_years( as.numeric(table_[i,age]) + xty, USA_table_male_2013)
-      #scvy_uk <- Surv_cv_years( as.numeric(table_[i,age]) + xty, table_in_use_UK_M);
-      
-   # }else{
-  #    print("FEMALE")
-      #rate_vec[i] <- rate_c_years(as.numeric(table_[i,age]) + as.numeric(table_[i,evttme])/365.25, table_in_use_F)
-  #    rate_vec_USA[i] <- rate_c_years(as.numeric(table_[i,age]) + as.numeric(table_[i,evttme])/12, USA_table_female_2013)
-   #   surv_vec_USA[i] <- Surv_c_years(as.numeric(table_[i,age]) + as.numeric(table_[i,evttme])/12, USA_table_female_2013)/Surv_c_years(as.numeric(table_[i,age]), USA_table_female_2013)
-      #scvy_all <- Surv_cv_years( as.numeric(table_[i,age]) + xty, table_in_use_F)
-  #    scvy_usa <- Surv_cv_years( as.numeric(table_[i,age]) + xty, USA_table_female_2013)
-      #scvy_uk <- Surv_cv_years( as.numeric(table_[i,age]) + xty, table_in_use_UK_F);
-    }
     
-    #surv_mat_all[i,] <- scvy_all/scvy_all[1];
-   # surv_mat_usa[i,] <- scvy_usa/scvy_usa[1];
-    #surv_mat_uk[i,] <- scvy_uk/scvy_uk[1];
-  #}
-  
-  
-  
-  ###########################################################
-  #mean survival curve 
-  #surv_mean_all <- colSums(surv_mat_all)/Np
-  #surv_mean_usa <- colSums(surv_mat_usa)/Np
-  #surv_mean_uk <- colSums(surv_mat_uk)/Np
-  #print("dimension of SURV_MAT UK")
-  #print(dim(surv_mat_uk))
-  
+  # Calculate survival matrix  
+  surv_mat[i, ] <- scvy_all / scvy_all[1]
+  }
+
+  # Object to return from function
   ret_obj <- list()
+  
   ret_obj$rate_vec <- rate_vec
   ret_obj$surv_mat <- surv_mat
-  
-  ###########################################################
-  #mean survival curve 
-  surv_mean <- colSums(surv_mat)/length(table_[,sex])
+
+  surv_mean <- colSums(surv_mat) / length(table_[, sex]) # mean survival cure
   ret_obj$surv_mean <- surv_mean
   ret_obj$xty <- xty
-  #ret_obj$surv_mean_all <- surv_mean_all
-  #ret_obj$surv_mean_uk <- surv_mean_uk
-  #ret_obj$surv_mean_usa <- surv_mean_usa
-  #ret_obj$time <- xty
+
   return(ret_obj)
 }
