@@ -22,7 +22,6 @@ If you want to run and adapt the code on your machine, all you need is
 + A working [R](https://www.r-project.org/) installation
 + A couple of R packages, including (in alphabetical order)
   * _flexsurv_
-  * _graphics_
   * _MASS_
   * _RCurl_
 + A copy of the code (obviously)
