@@ -32,18 +32,18 @@ par(mar = c(4, 5, 2, 2))
 barplot(t_Sex, main = "Gender", col = c("red", "blue"),
         cex.lab = 1.5, cex.axis = 1.2, cex = 1.2, ylab = "Percent",
         axes = FALSE, ylim = c(0, .7))
-axis(2, at = c(0, 0.33, 0.6), label = c("0%", "33%", "60%"),
+axis(2, at = c(0, 0.33, 0.6), label = c("0", "33", "60"),
      cex.lab = 1.5, cex = 1.2, cex.axis = 1.2)
 
 ### Histogram for age distribution
 par(mar = c(5, 6, 2, 2))
 rh <- hist(as.numeric(trial_data$AGE), main = "Age",
            cex.axis = 1.2, cex.lab = 1.5, cex = 1.2, freq = TRUE, axes = TRUE,
-           xlab = "Age at start of trial")
+           xlab = "Age (years) at start of trial")
 
 ### Barplot for geographical distribution
 barplot(t_country, las = 2, main = "Countries",
-        ylab = "Frequency", cex.names = 1.5, cex.lab = 1.5)
+        ylab = "Number of patients", cex.names = 1.5, cex.lab = 1.5)
 
 ## Close graphics device
 dev.off()
