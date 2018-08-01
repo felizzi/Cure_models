@@ -137,14 +137,16 @@ write.csv(est_cure, file = "reports/est_cures.csv")
 ## Plot the fits from the various models
 pdf("reports/cure_parametric_fits.pdf")
 ### Kaplan-Meier curve
-plot(KM, conf.int = FALSE, xlab = "Time (years)",
+plot(KM, conf.int = FALSE, xlab = "Time (years)", ylab = "Proportion surviving",
      xlim = c(0, 10), lty = 2, lwd = 5)
 ### Parametric models
 for (i in 1:7) {
   lines(xty, y_models_cures[[i]], col = palette()[i + 1], lwd = 2)
 }
-lines(KM, conf.int = FALSE, xlab = "Time (years)", lty = 2, lwd = 5)
-legend("topright", models[1:7], col = palette()[2:8], lwd = 4)
+lines(KM, conf.int = FALSE, xlab = "Time (years)",
+      ylab = "Proportion surviving",lty = 2, lwd = 5)
+legend("topright", c(models[1:7], "KM"), col = c(palette()[2:8], "black"),
+       lwd = 4)
 dev.off()
 
 ## Plot the extrapolations
