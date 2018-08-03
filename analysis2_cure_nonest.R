@@ -168,7 +168,8 @@ for (i in 1:length(models)) {
   # Plot survival estimates
   colors__ <- rainbow(length(cure_vals))
   plot(fsr_fits_, xlim = c(0, 25), main = "   ",
-       xlab = "Time (years)", ylab = "Survival", est = FALSE, ci = FALSE)
+       xlab = "Time (years)", ylab = "Survival probability",
+       est = FALSE, ci = FALSE)
 
   fits_f1 <- data.frame("years" = numeric(lx), "weeks" = numeric(lx),
     "Cure_0" = numeric(lx), "Cure_1" = numeric(lx),
