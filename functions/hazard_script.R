@@ -46,13 +46,12 @@ hazard_time <- function(table_, evttme, sex, age, year, country_trial, country_o
       table_in_use <- subset(table_in_use, Year == year_in_use)
       rate_vec[i] <- rate_c_years(as.numeric(table_[i,age]) + as.numeric(table_[i,evttme]), table_in_use);
       scvy_all <- Surv_cv_years( as.numeric(table_[i,age]) + xty, table_in_use);
-      if( length(is.na(scvy_all) > 0 )){ print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year missing in table")  )}
-      
+
       if ( is.na(rate_vec[i] )){
         if (length(table_in_use$Year) == 0){
-          print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year missing in table")  )
+          #print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year missing in table")  )
         }else{
-          print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year present in table")  )
+          #print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year present in table")  )
         }
       }
     }
@@ -64,12 +63,12 @@ hazard_time <- function(table_, evttme, sex, age, year, country_trial, country_o
       rate_vec[i] <- rate_c_years(as.numeric(table_[i,age]) + as.numeric(table_[i,evttme]), table_in_use);
       
       scvy_all <- Surv_cv_years( as.numeric(table_[i,age]) + xty, table_in_use);
-      if( length(is.na(scvy_all) > 0 )){ print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year missing in table")  )}
+      if( length(is.na(scvy_all) > 0 )){ #print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year missing in table")  )}
       if ( is.na(rate_vec[i] )){
         if (length(table_in_use$Year) == 0){
-          print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year missing in table")  )
+          #print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year missing in table")  )
         }else{
-          print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year present in table")  )
+          #print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year present in table")  )
         }
       }
     }
