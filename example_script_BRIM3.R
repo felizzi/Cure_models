@@ -1,7 +1,16 @@
 ### script for the second example, namely with the addition of an external-input cure 
 require(flexsurv)
 require(MASS)
+
+#########################################################
+### load the p[erturbed trial data
+#########################################################
 trial_data <- read.csv(paste0("libraries/example_1.csv"))
+
+#########################################################
+### use the hazard_script.R file to compute the subject-
+### specific background hazard 
+#########################################################
 source("hazard_script.R")
 source("functions/likelihood_funs.r")
 hazard_out <- hazard_time(table_ = trial_data, 
@@ -13,12 +22,97 @@ hazard_out <- hazard_time(table_ = trial_data,
                           country_output = NULL)
 
 trial_data$rate_mod <- hazard_out$rate_vec
-
 #surv_mean <- colSums(hazard_out$surv_mat, na.rm = T)/
 surv_mean <- colSums(hazard_out$surv_mat, na.rm = T)/length(which(!is.na(hazard_out$surv_mat[,1])))
 xty <- hazard_out$xty
 
+
+########################################################################################
+### define the list of models to be included 
+########################################################################################
 models <- c("exponential", "weibull", "llogis", "lognormal", "gompertz", "gamma", "gengamma")
+
+
+
+
+N_m <- length(models) 
+xty <-seq(0,30, by = 0.2) ## timespan -- 30 years 
+fsr_fits_ <- list()
+opt_obj_ <- list()
+
+St_models <- list()
+y_models <- list()
+St_base_models <- list()
+
+St_models <- list()
+y_models <- list()
+St_base_models <- list()
+St_models_cures <- list()
+y_models_cures <- list() 
+St_base_models_cures <- list()
+
+est_cure <- data.frame(function_type = character(N_m), cure_rate = numeric(N_m), stderr = numeric(N_m), lower.ci = numeric(N_m), upper.ci = numeric(N_m), AIC = numeric(N_m), BIC = numeric(N_m), stringsAsFactors = FALSE)
+
+KM <- survfit(Surv(as.numeric(TIME), CNSR)~1, data = trial_data)
+
+for (i in 1:length(models)){
+  #perform the fits
+  print(models[i])
+  print("pre fit")
+  fsr_fits_[[i]] <- flexsurvreg(Surv(as.numeric(TIME), CNSR)~1, data = trial_data, dist = models[i])
+  print("post fit")
+  fsr_use <- fsr_fits_[[i]]$res[,'est'];
+  len <- length(fsr_use)
+  opt_obj_[[i]] <- try(optim(par=c(fsr_use, 0.23), #dummy staring parameter for the cure-fraction 
+                             ll.mix, 
+                             table = trial_data,
+                             time_col = "TIME",
+                             cen_col = "CNSR",
+                             rate_col = "rate_mod",
+                             method = "L-BFGS-B", 
+                             obj = fsr_fits_[[i]],
+                             hessian = TRUE, 
+                             lower=c(rep(-Inf,length(fsr_use)),0), upper = c(rep(Inf,length(fsr_use)),1)) , silent = FALSE)
+  print("optimization")
+  invHuse <- ginv(opt_obj_[[i]]$hessian)
+  est_cure$function_type[i] <- models[i]
+  est_cure$cure_rate[i] <- opt_obj_[[i]]$par[length(fsr_use) + 1]
+  est_cure$stderr[i] <-  sqrt(invHuse[length(fsr_use) + 1, length(fsr_use) + 1])
+  est_cure$lower.ci[i] <- est_cure$cure_rate[i] - qt(0.975, fsr_fits_[[i]]$N)*est_cure$stderr[i]
+  est_cure$upper.ci[i] <- est_cure$cure_rate[i] + qt(0.975, fsr_fits_[[i]]$N)*est_cure$stderr[i]
+  est_cure$AIC[i] <- 2*(length(fsr_use) + 1) + 2*opt_obj_[[i]]$value
+  est_cure$BIC[i] <- (length(fsr_use) + 1)*log(fsr_fits_[[i]]$N)  + 2*opt_obj_[[i]]$value
+  
+  St_ <- do.call(fsr_fits_[[i]]$dfns$p, args = c(as.list(opt_obj_[[i]]$par[1:(len)]),list(q = xty, lower.tail = FALSE)))
+  St_base <- do.call(fsr_fits_[[i]]$dfns$p, args = c(as.list(fsr_fits_[[i]]$res[,'est']),   list(q = xty, lower.tail = FALSE)))
+  y_ <- surv_mean*(est_cure$cure_rate[i] + (1 - est_cure$cure_rate[i])*St_)
+  
+  St_models_cures[[i]] <- St_
+  y_models_cures[[i]] <- y_ 
+  St_base_models_cures[[i]] <- St_base
+}
+
+## print tables with AIC, cure proportion, upper and lower confidence intervals 
+write.csv(est_cure, file = "reports/est_cures_BRIM3.csv")
+
+
+
+png("reports/cure_parametric_fits_BRIM3.png")
+plot(KM, conf.int =F, lwd = 5, xlab = "Time (years)", ylab = "Survival", xlim = c(0,10), lty = 2, cex.axis = 1.5, cex.lab = 1.5)
+for (i in 1:7){
+  lines(xty, y_models_cures[[i]], col = palette()[i+1], lwd = 2)  
+}
+lines(KM, conf.int =F, lwd = 5, xlab = "Time (years)",lty = 2)
+legend("topright", c("KM",models[1:7]),col = c("black",palette()[2:8]), lwd = 4  , lty = c(2,rep(1,7)), cex = 1.5)
+dev.off()
+
+########################################################################################
+########################################################################################
+# part B -- the "informed cure"
+#
+########################################################################################
+### define the values of cure proportions to be explored 
+########################################################################################
 cure_vals <- c(0,0.01,0.02,0.03,0.04,0.05,0.1,0.15,0.2)
 
 parms_fit_frame <- list()
@@ -53,16 +147,16 @@ for (i in 1:length(models)){
     
     fsr_use <- fsr_fits_$res[,'est'];
     opt_obj_f_[[j]] <- try(optim(par=c(fsr_use), #dummy staring parameter for the cure-fraction 
-                                          ll.mix_f, 
-                                          pi_ = cure_vals[j],
-                                          table = trial_data,
-                                          time_col = "TIME",
-                                          cen_col = "CNSR",
-                                          rate_col = "rate_mod",
-                                          method = "BFGS", 
-                                          obj = fsr_fits_,
-                                          hessian = TRUE) 
-                                    , silent = FALSE)
+                                 ll.mix_f, 
+                                 pi_ = cure_vals[j],
+                                 table = trial_data,
+                                 time_col = "TIME",
+                                 cen_col = "CNSR",
+                                 rate_col = "rate_mod",
+                                 method = "BFGS", 
+                                 obj = fsr_fits_,
+                                 hessian = TRUE) 
+                           , silent = FALSE)
     if (1){ 
       print(init_pos[[j]])
       
@@ -96,17 +190,17 @@ for (i in 1:length(models)){
   
   
   fits_f1 <- data.frame("years" = numeric(lx), "weeks" = numeric(lx), 
-                              "Cure_0" = numeric(lx),
-                              "Cure_1" = numeric(lx),
-                              "Cure_2" = numeric(lx),
-                              "Cure_3" = numeric(lx),
-                              "Cure_4" = numeric(lx),
-                              "Cure_5" = numeric(lx), 
-                              "Cure_10"  = numeric(lx),
-                              "Cure_15" = numeric(lx),
-                              "Cure_20" = numeric(lx),
-                              "background" = numeric(lx),
-                              stringsAsFactors=FALSE)
+                        "Cure_0" = numeric(lx),
+                        "Cure_1" = numeric(lx),
+                        "Cure_2" = numeric(lx),
+                        "Cure_3" = numeric(lx),
+                        "Cure_4" = numeric(lx),
+                        "Cure_5" = numeric(lx), 
+                        "Cure_10"  = numeric(lx),
+                        "Cure_15" = numeric(lx),
+                        "Cure_20" = numeric(lx),
+                        "background" = numeric(lx),
+                        stringsAsFactors=FALSE)
   
   fits_f1[,"weeks"] <- seq(0,lx-1, by = 1)
   fits_f1[,"years"] <- xty
@@ -164,80 +258,3 @@ for (i in 1:length(models)){
 }
 
 
-
-
-
-N_m <- length(models) 
-xty <-seq(0,30, by = 0.2) ## timespan -- 30 years 
-fsr_fits_ <- list()
-opt_obj_ <- list()
-
-St_models <- list()
-y_models <- list()
-St_base_models <- list()
-
-St_models <- list()
-y_models <- list()
-St_base_models <- list()
-St_models_cures <- list()
-y_models_cures <- list() 
-St_base_models_cures <- list()
-
-est_cure <- data.frame(function_type = character(N_m), cure_rate = numeric(N_m), stderr = numeric(N_m), lower.ci = numeric(N_m), upper.ci = numeric(N_m), AIC = numeric(N_m), BIC = numeric(N_m), stringsAsFactors = FALSE)
-
-#define the general purpose ll.mix function 
-KM <- survfit(Surv(as.numeric(TIME), CNSR)~1, data = trial_data)
-KM1 <- survfit(Surv(as.numeric(TIME), CNSR)~1, data = trial_data1)
-
-for (i in 1:length(models)){
-  #perform the fits
-  print(models[i])
-  print("pre fit")
-  fsr_fits_[[i]] <- flexsurvreg(Surv(as.numeric(TIME), CNSR)~1, data = trial_data, dist = models[i])
-  print("post fit")
-  fsr_use <- fsr_fits_[[i]]$res[,'est'];
-  len <- length(fsr_use)
-  opt_obj_[[i]] <- try(optim(par=c(fsr_use, 0.23), #dummy staring parameter for the cure-fraction 
-                             ll.mix, 
-                             table = trial_data,
-                             time_col = "TIME",
-                             cen_col = "CNSR",
-                             rate_col = "rate_mod",
-                             method = "L-BFGS-B", 
-                             obj = fsr_fits_[[i]],
-                             hessian = TRUE, 
-                             lower=c(rep(-Inf,length(fsr_use)),0), upper = c(rep(Inf,length(fsr_use)),1)) , silent = FALSE)
-  print("optimization")
-  invHuse <- ginv(opt_obj_[[i]]$hessian)
-  est_cure$function_type[i] <- models[i]
-  est_cure$cure_rate[i] <- opt_obj_[[i]]$par[length(fsr_use) + 1]
-  est_cure$stderr[i] <-  sqrt(invHuse[length(fsr_use) + 1, length(fsr_use) + 1])
-  est_cure$lower.ci[i] <- est_cure$cure_rate[i] - qt(0.975, fsr_fits_[[i]]$N)*est_cure$stderr[i]
-  est_cure$upper.ci[i] <- est_cure$cure_rate[i] + qt(0.975, fsr_fits_[[i]]$N)*est_cure$stderr[i]
-  est_cure$AIC[i] <- 2*(length(fsr_use) + 1) + 2*opt_obj_[[i]]$value
-  est_cure$BIC[i] <- (length(fsr_use) + 1)*log(fsr_fits_[[i]]$N)  + 2*opt_obj_[[i]]$value
-  
-  St_ <- do.call(fsr_fits_[[i]]$dfns$p, args = c(as.list(opt_obj_[[i]]$par[1:(len)]),list(q = xty, lower.tail = FALSE)))
-  print("pst St")
-  St_base <- do.call(fsr_fits_[[i]]$dfns$p, args = c(as.list(fsr_fits_[[i]]$res[,'est']),   list(q = xty, lower.tail = FALSE)))
-  y_ <- surv_mean*(est_cure$cure_rate[i] + (1 - est_cure$cure_rate[i])*St_)
-  
-  St_models_cures[[i]] <- St_
-  y_models_cures[[i]] <- y_ 
-  St_base_models_cures[[i]] <- St_base
-}
-
-## print tables with AIC, cure proportion, upper and lower confidence intervals 
-write.csv(est_cure, file = "reports/est_cures_BRIM3.csv")
-
-
-
-png("reports/cure_parametric_fits_BRIM3.png")
-plot(KM, conf.int =F, lwd = 5, xlab = "Time (years)", ylab = "Survival", xlim = c(0,10), lty = 2, cex.axis = 1.5, cex.lab = 1.5)
-for (i in 1:7){
-  
-  lines(xty, y_models_cures[[i]], col = palette()[i+1], lwd = 2)  
-}
-lines(KM, conf.int =F, lwd = 5, xlab = "Time (years)",lty = 2)
-legend("topright", c("KM",models[1:7]),col = c("black",palette()[2:8]), lwd = 4  , lty = c(2,rep(1,7)), cex = 1.5)
-dev.off()
