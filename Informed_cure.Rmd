@@ -1,5 +1,5 @@
 ---
-title: "Informed_Cure"
+title: "Step-by-step guide to informed cure"
 output: html_document
 ---
 
@@ -25,7 +25,7 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r hazard, message = FALSE, }
+```{r hazard, message = FALSE, warning = FALSE }
 hazard_out <- hazard_time(table_ = trial_data, 
                           evttme = "TIME" , 
                           sex = "SEX", 
@@ -49,7 +49,7 @@ cure_vals <- c(0,0.01,0.02,0.03,0.04,0.05,0.1,0.15,0.2)
 
 
 
-Loop to estimate the parameters of the parametric fits for each value of the cure fraction presented above
+Loop to estimate the parameters of the parametric fits for each value of the cure fraction presented above. The cure fraction is passed as input to the ***ll.mix_f*** function.
 
 ```{r model_loop, message=FALSE, warning = FALSE}
 for (i in 1:length(models)){
@@ -59,7 +59,7 @@ for (i in 1:length(models)){
   
   for (j in 1:length(cure_vals)){
     fsr_use <- fsr_fits_$res[,'est'];
-    opt_obj_f_[[j]] <- try(optim(par=c(fsr_use), #dummy staring parameter for the cure-fraction 
+    opt_obj_f_[[j]] <- try(optim(par=c(fsr_use), 
                                  ll.mix_f, 
                                  pi_ = cure_vals[j],
                                  table = trial_data,

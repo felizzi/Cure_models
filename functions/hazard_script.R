@@ -20,7 +20,6 @@ hazard_time <- function(table_, evttme, sex, age, year, country_trial, country_o
   ## loop over the countries in the trial 
   Np <- length(table_[,sex]) ## number of rows in the datatable
   
-  #rate_vec <- matrix(,nrow = Np, ncol = 1);
   rate_vec <- matrix(,nrow = Np, ncol = 1);
   surv_vec <- matrix(,nrow = Np, ncol = 1);
   
@@ -47,13 +46,6 @@ hazard_time <- function(table_, evttme, sex, age, year, country_trial, country_o
       rate_vec[i] <- rate_c_years(as.numeric(table_[i,age]) + as.numeric(table_[i,evttme]), table_in_use);
       scvy_all <- Surv_cv_years( as.numeric(table_[i,age]) + xty, table_in_use);
 
-      if ( is.na(rate_vec[i] )){
-        if (length(table_in_use$Year) == 0){
-          #print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year missing in table")  )
-        }else{
-          #print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year present in table")  )
-        }
-      }
     }
     if (gender_in_use == "FEMALE" | gender_in_use == "F"){
       table_in_use <- read.csv(paste0("libraries/",country_map[[country_in_use]],"/Female/Mortality.csv", sep = ""))
@@ -63,15 +55,7 @@ hazard_time <- function(table_, evttme, sex, age, year, country_trial, country_o
       rate_vec[i] <- rate_c_years(as.numeric(table_[i,age]) + as.numeric(table_[i,evttme]), table_in_use);
       
       scvy_all <- Surv_cv_years( as.numeric(table_[i,age]) + xty, table_in_use);
-      if( length(is.na(scvy_all) > 0 )){ #print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year missing in table")  )}
-      if ( is.na(rate_vec[i] )){
-        if (length(table_in_use$Year) == 0){
-          #print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year missing in table")  )
-        }else{
-          #print(paste(country_in_use, "   ", country_map[[country_in_use]],"  ",gender_in_use,"    ",table_[i,evttme], " ",year_in_use,"  ",table_[i,age], "year present in table")  )
-        }
-      }
-    }
+          }
     surv_mat[i,] <- scvy_all/scvy_all[1];
     #  print("MALE")
       #rate_vec[i] <- rate_c_years(as.numeric(table_[i,age]) + as.numeric(table_[i,evttme])/365.25, table_in_use_M);
