@@ -4,7 +4,7 @@ require(MASS)
 #trial_data <- read.csv(paste0("libraries/example.csv"))
 trial_data <- read.csv(paste0("libraries/example.csv")) ## example 1 being the BRIM3 data
 
-source("hazard_script.R")
+source("functions/hazard_script.R")
 source("functions/likelihood_funs.r")
 hazard_out <- hazard_time(table_ = trial_data,
                           evttme = "TIME" ,
@@ -19,7 +19,7 @@ trial_data$rate_mod <- hazard_out$rate_vec
 #surv_mean <- colSums(hazard_out$surv_mat, na.rm = T)/
 surv_mean <- colSums(hazard_out$surv_mat, na.rm = T)/length(which(!is.na(hazard_out$surv_mat[,1])))
 
-models <- c("exponential", "weibull", "llogis", "lognormal", "gompertz", "gamma", "gengamma", "genf")
+models <- c("exponential", "weibull", "llogis", "lognormal", "gompertz", "gamma", "gengamma")
 
 N_m <- length(models)
 xty <-seq(0,30, by = 0.2) ## timespan -- 30 years
