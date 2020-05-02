@@ -26,7 +26,7 @@ table_gen <- function(str_Country_Code, str_Country, sex, parent_dir) {
   # Generate an authentication file, replace 'your@email.com:password' with
   #  the email and password used to register your account at the HMD
   aut_data <- getURL(url_name, userpwd = "your@email.com:password")
-  fdata    <- "libraries/app_aut.txt"
+  fdata    <- "data/app_aut.txt"
   write(aut_data, file = "libraries/app_aut.txt")
   
   # Open connection
