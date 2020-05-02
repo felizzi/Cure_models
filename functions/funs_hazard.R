@@ -14,7 +14,7 @@ for (i in 1:length(c_mort_list$Code)){
 country_map[["SUI"]] <- "Switzerland"
 country_map[["NED"]] <- "Netherlands"
 country_map[["GER"]] <- "Germany"
-source("functions/functions_long_term_survival.r")
+source("functions/funs_long_term_survival.R")
 hazard_time <- function(table_, evttme, sex, age, year, country_trial, country_output){
   # load in the file the tables 
   ## loop over the countries in the trial 
