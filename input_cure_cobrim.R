@@ -1,28 +1,26 @@
 ##########################################################################
-# Worked example of an analysis where the cure fraction is estimable     #
-# from the trial data, using simulated BRIM3 data                        #
+# Worked example of an analysis where the cure fraction is not estimable #
+# from the trial data, using simulated coBRIM data                       #
 ##########################################################################
 
 ###############################################################################
-# In this script, anonymized and masked data from the BRIM3 trial, which
-#  compared dacarbazine and vemurafenib in the treatment of
-#  BRAFV600 mutation-positive metastatic melanoma in (Chapman et al., 2011,
-#  N Engl J Med), were used to provide a
-#  worked example of how to estimate cure fractions from a clinical trial
+# In this script, anonymized and masked data from the coBRIM trial, which
+#  compared cobimetinib+vemurafenib and placebo+vemurafenib in the treatment of
+#  BRAFV600 mutation-positive unresectable stage IIIC or stage IV melanoma in
+#  19 countries (Ascierto et al., 2016, Lancet Oncol), were used to provide a
+#  worked example of how to implement cure models if the cure fraction needs to
+#  be estimated using an external data source.
 ###############################################################################
 
 # Load packages and custom functions --------------------------------------
-require(flexsurv)
-require(MASS)
+library(flexsurv)
+library(MASS)
 
 source("functions/funs_hazard.R")
-source("functions/funs_likelihood.R")
+source("functions/funs_likelihood.r")
 
 # Load trial data ---------------------------------------------------------
-brim3 <- read.csv("data/trials/brim3_simulated.csv")
-
-
-# Define models and data containers ---------------------------------------
+cobrim <- read.csv("data/trials/cobrim_simulated.csv")
 
 # Parametric models to be considered in estimation ====
 models <- c(
@@ -30,7 +28,6 @@ models <- c(
   "gamma", "gengamma"
 )
 N_m <- length(models)
-
 
 # Initialize containers for modelling outputs ====
 fsr_fits_ <- list()
@@ -82,27 +79,29 @@ area_surv <- function(x, y) {
   return(val)
 }
 
+
+
 # Start analysis ----------------------------------------------------------
 
 # Estimate the Kaplan-Meier curve ====
-KM <- survfit(Surv(as.numeric(TIME), CNSR) ~ 1, data = brim3)
+KM <- survfit(Surv(as.numeric(TIME), CNSR) ~ 1, data = cobrim)
 
 # Estimate the various models specified above
-for (i in 1:N_m) {# CHECK THIS
+for (i in 1:N_m) {
   # Calculate model fits
   print(models[i])
   print("pre fit")
   fsr_fits_[[i]] <- flexsurvreg(Surv(as.numeric(TIME), CNSR) ~ 1,
-                                data = brim3, dist = models[i])
+                                data = cobrim, dist = models[i])
   print("post fit")
-  fsr_use <- fsr_fits_[[i]]$res[, "est"] #CHECK THIS
+  fsr_use <- fsr_fits_[[i]]$res[, "est"]
   len <- length(fsr_use)
 
   # Run optimization
   opt_obj_[[i]] <- try(optim(
-    par = c(fsr_use, 0.23), # dummy starting parameter for the cure fraction
-    ll.mix, # 
-    table = brim3,
+    par = c(fsr_use, 0.23), # dummy staring parameter for the cure-fraction
+    ll.mix,
+    table = cobrim,
     time_col = "TIME",
     cen_col = "CNSR",
     rate_col = "rate_mod",
@@ -111,42 +110,49 @@ for (i in 1:N_m) {# CHECK THIS
     hessian = TRUE,
     lower = c(rep(-Inf, length(fsr_use)), 0),
     upper = c(rep(Inf, length(fsr_use)), 1)
-    ),
-    silent = FALSE)
+  ), silent = FALSE)
   print("optimization")
   invHuse <- ginv(opt_obj_[[i]]$hessian)
-  
+
   # Store results in predefined containers
   est_cure$function_type[i] <- models[i]
-  est_cure$cure_rate[i]     <- opt_obj_[[i]]$par[length(fsr_use) + 1]
-  est_cure$stderr[i]        <- sqrt(invHuse[length(fsr_use) + 1,
-                                            length(fsr_use) + 1])
-  est_cure$lower.ci[i]      <- est_cure$cure_rate[i] - 
+  est_cure$cure_rate[i] <- opt_obj_[[i]]$par[length(fsr_use) + 1]
+  est_cure$stderr[i] <- sqrt(invHuse[
+    length(fsr_use) + 1,
+    length(fsr_use) + 1
+  ])
+  est_cure$lower.ci[i] <- est_cure$cure_rate[i] -
     qt(0.975, fsr_fits_[[i]]$N) * est_cure$stderr[i]
-  est_cure$upper.ci[i]      <- est_cure$cure_rate[i] + 
+  est_cure$upper.ci[i] <- est_cure$cure_rate[i] +
     qt(0.975, fsr_fits_[[i]]$N) * est_cure$stderr[i]
-  est_cure$AIC[i]           <- 2 * (length(fsr_use) + 1) + 
-    2 * opt_obj_[[i]]$value
-  est_cure$BIC[i]           <- (length(fsr_use) + 1) *
+  est_cure$AIC[i] <- 2 * (length(fsr_use) + 1) + 2 * opt_obj_[[i]]$value
+  est_cure$BIC[i] <- (length(fsr_use) + 1) *
     log(fsr_fits_[[i]]$N) + 2 * opt_obj_[[i]]$value
-  
-  St_     <- do.call(fsr_fits_[[i]]$dfns$p,
-                 args = c(as.list(opt_obj_[[i]]$par[1:(len)]),
-                          list(q = xty, lower.tail = FALSE)))
+
+  St_ <- do.call(fsr_fits_[[i]]$dfns$p,
+    args = c(
+      as.list(opt_obj_[[i]]$par[1:(len)]),
+      list(q = xty, lower.tail = FALSE)
+    )
+  )
+  print("pst St")
+
   St_base <- do.call(fsr_fits_[[i]]$dfns$p,
-                     args = c(as.list(fsr_fits_[[i]]$res[, "est"]),
-                              list(q = xty, lower.tail = FALSE)))
-  y_      <- surv_mean * (est_cure$cure_rate[i] +
-                            (1 - est_cure$cure_rate[i]) * St_)
-  
-  St_models_cures[[i]]      <- St_
-  y_models_cures[[i]]       <- y_
+    args = c(
+      as.list(fsr_fits_[[i]]$res[, "est"]),
+      list(q = xty, lower.tail = FALSE)
+    )
+  )
+  y_ <- surv_mean * (est_cure$cure_rate[i] + (1 - est_cure$cure_rate[i]) * St_)
+
+  St_models_cures[[i]] <- St_
+  y_models_cures[[i]] <- y_
   St_base_models_cures[[i]] <- St_base
 }
 
 # Calculate the hazard rates and mean survival ====
 hazard_out <- hazard_time(
-  table_ = brim3,
+  table_ = cobrim,
   evttme = "TIME",
   sex = "SEX",
   age = "AGE",
@@ -155,21 +161,22 @@ hazard_out <- hazard_time(
   country_output = NULL
 )
 
-brim3$rate_mod <- hazard_out$rate_vec
+cobrim$rate_mod <- hazard_out$rate_vec
 surv_mean <- colSums(hazard_out$surv_mat, na.rm = TRUE) /
   length(which(!is.na(hazard_out$surv_mat[, 1])))
-xty <- hazard_out$xty # Modeling time horizon
 
 
 # Print outputs ====
-write.csv(est_cure, file = "reports/est_cures_BRIM3.csv")
+write.csv(est_cure, file = "reports/est_cures_coBRIM.csv")
 
-png("reports/cure_parametric_fits_BRIM3.png")
+png("reports/cure_parametric_fits_coBRIM.png")
 
 # Kaplan-Meier curve
-plot(KM, conf.int = F, lwd = 5, xlab = "Time (years)",
-     ylab = "Survival proportion", xlim = c(0, 10), lty = 2,
-     cex.axis = 1.5, cex.lab = 1.5)
+plot(KM,
+  conf.int = F, lwd = 5, xlab = "Time (years)",
+  ylab = "Survival proportion", xlim = c(0, 10), lty = 2,
+  cex.axis = 1.5, cex.lab = 1.5
+)
 
 # Parametric models
 for (i in 1:7) {
@@ -180,8 +187,7 @@ legend("topright", c("KM", models[1:7]), col = c("black", palette()[2:8]),
        lwd = 4, lty = c(2, rep(1, 7)), cex = 1.5)
 dev.off()
 
-
-# Compare parametric models with cure fractions ---------------------------
+# Compare different cure fractions ---------------------------
 
 ## For each cure fraction value, initialise data frame ====
 for (j in 1:N_c) {
@@ -198,22 +204,22 @@ for (j in 1:N_c) {
 
 ## Calculate fits for each parametric model and cure fraction value
 for (i in 1:N_m) {
-  png(paste("reports/plot_models_", models[i], "_BRIM3.png", sep = ""),
+  png(paste("reports/plot_models_", models[i], "_coBRIM.png", sep = ""),
       width = 9, height = 6, units = "in", res = 500)
 
   fsr_fits_ <- flexsurvreg(Surv(as.numeric(TIME), CNSR) ~ 1,
-                           data = brim3, dist = models[i])
+                           data = cobrim, dist = models[i])
   surv_fits_ <- survfit(Surv(as.numeric(TIME), CNSR) ~ 1,
-                        data = brim3)
+                        data = cobrim)
   opt_obj_f_ <- list()
 
   for (j in 1:N_c) {
     fsr_use <- fsr_fits_$res[, "est"]
     opt_obj_f_[[j]] <- try(optim(
-      par = c(fsr_use), # dummy staring parameter for the cure-fraction
+      par = c(fsr_use), # dummy starting parameter for the cure-fraction
       ll.mix_f,
       pi_ = cure_vals[j],
-      table = brim3,
+      table = cobrim,
       time_col = "TIME",
       cen_col = "CNSR",
       rate_col = "rate_mod",
@@ -225,6 +231,7 @@ for (i in 1:N_m) {
     )
     if (1) {
       print(init_pos[[j]])
+
       invHuse_ <- ginv(opt_obj_f_[[j]]$hessian)
       
       parm_names <- rownames(fsr_fits_$res)
@@ -283,7 +290,7 @@ for (i in 1:N_m) {
 
     fits_f1[, cure_strs[j]] <- St_[[j]]
     if ((1 == 1) & (j == 1)) {
-      v_leg <- c(v_leg, paste("Parametric"))
+      v_leg <- c(v_leg, paste("Parametric  ", models[i]))
       pl_exp <- St_base_[[j]]
     }
     lines(xty, pl_exp, col = "blue", lwd = 2.5, lty = 2)
@@ -298,17 +305,18 @@ for (i in 1:N_m) {
     AREA_cures[i, paste(cure_strs[j],
                         "_res", sep = "")] <- area_surv(xty[i10], y_[[j]][i10])
     AREA_cures[i, "No_cure_res"] <- area_surv(xty[i10], St_base_[[j]][i10])
-    v_leg <- c(v_leg, paste("Cure = ", signif(cure_vals[j] * 100, 2), "%"))
+    v_leg <- c(v_leg, paste0("Cure = ", signif(cure_vals[j] * 100, 2), "%"))
   }
-  
   lines(fsr_fits_, est = FALSE, ci = FALSE)
   lines(surv_fits_, lwd = 2)
 
   legend("topright",
          c("KM and confidence interval", v_leg),
          col = c("black", "blue", colors__),
-         lwd = c(1, rep(2.5, N_c + 1)),
-         lty = c(1, 2, rep(1, N_c + 1)), cex = 1.05, ncol = 1)
+         lwd = c(1, rep(2.5, N_c + 1)), lty = c(1, 2, rep(1, N_c + 1)),
+         cex = 1.05, ncol = 1)
 
+  write.csv(AIC_cures, file = paste("reports/input_cures_AIC_coBRIM.csv", sep = ""))
+  write.csv(AREA_cures, file = paste("reports/input_cures_AREA_coBRIM.csv", sep = ""))
   dev.off()
 }
