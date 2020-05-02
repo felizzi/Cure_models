@@ -1,9 +1,9 @@
 ### script for the second example, namely with the addition of an external-input cure
 require(flexsurv)
 require(MASS)
-trial_data <- read.csv(paste0("libraries/example_1.csv"))
-source("hazard_script.R")
-source("functions/likelihood_funs.r")
+trial_data <- read.csv(paste0("data/example_1.csv"))
+source("functions/funs_hazard.R")
+source("functions/funs_likelihood.r")
 hazard_out <- hazard_time(table_ = trial_data,
                           evttme = "TIME" ,
                           sex = "SEX",

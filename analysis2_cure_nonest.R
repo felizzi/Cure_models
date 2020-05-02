@@ -16,11 +16,11 @@
 library(flexsurv)
 library(MASS)
 
-source("functions/hazard_script.R")
-source("functions/likelihood_funs.r")
+source("functions/funs_hazard.R")
+source("functions/funs_likelihood.r")
 
 # Load trial data
-trial_data <- read.csv(paste0("libraries/analysis2_clinical_data.csv"))
+trial_data <- read.csv(paste0("data/analysis2_clinical_data.csv"))
 
 # Start the analysis
 

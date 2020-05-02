@@ -1,6 +1,6 @@
 ## plot for external mortality data
-trial_data_1 <- read.csv(paste0("libraries/example_1.csv"))
-trial_data <- read.csv(paste0("libraries/example.csv"))
+trial_data_1 <- read.csv(paste0("data/example_1.csv"))
+trial_data <- read.csv(paste0("data/example.csv"))
 
 require(graphics)
 jet.colors <-

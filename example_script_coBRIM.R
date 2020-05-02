@@ -1,11 +1,11 @@
 require(flexsurv)
 require(MASS)
 
-#trial_data <- read.csv(paste0("libraries/example.csv"))
-trial_data <- read.csv(paste0("libraries/example.csv")) ## example 1 being the BRIM3 data
+#trial_data <- read.csv(paste0("data/example.csv"))
+trial_data <- read.csv(paste0("data/example.csv")) ## example 1 being the BRIM3 data
 
-source("functions/hazard_script.R")
-source("functions/likelihood_funs.r")
+source("functions/funs_hazard.R")
+source("functions/funs_likelihood.r")
 hazard_out <- hazard_time(table_ = trial_data,
                           evttme = "TIME" ,
                           sex = "SEX",

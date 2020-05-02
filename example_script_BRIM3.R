@@ -5,14 +5,14 @@ require(MASS)
 #########################################################
 ### load the p[erturbed trial data
 #########################################################
-trial_data <- read.csv(paste0("libraries/analysis2_clinical_data.csv"))
+trial_data <- read.csv(paste0("data/analysis2_clinical_data.csv"))
 
 #########################################################
 ### use the hazard_script.R file to compute the subject-
 ### specific background hazard
 #########################################################
-source("functions/hazard_script.R")
-source("functions/likelihood_funs.r")
+source("functions/funs_hazard.R")
+source("functions/funs_likelihood.r")
 hazard_out <- hazard_time(table_ = trial_data,
                           evttme = "TIME" ,
                           sex = "SEX",

@@ -1,9 +1,9 @@
 
-country_List <- read.csv("libraries/CountryList.csv",sep = ",")
-mainDir <- paste0(getwd(),"/libraries", sep = "")
+country_List <- read.csv("data/CountryList.csv",sep = ",")
+mainDir <- paste0(getwd(),"/data", sep = "")
 
 
-source("mortality_table_loader.R")
+source("functions/funs_load_mort_table.R")
 for (i in 1:length(country_List$Code)){
   subDir <- country_List$Country[i]
   
@@ -17,8 +17,8 @@ for (i in 1:length(country_List$Code)){
   if (!file.exists(paste(mainDir,subDir,"Female", sep ="/"))){
     dir.create(file.path(paste(mainDir, subDir,sep="/"),"Female"))
   }
-  table_gen(str_Country_Code = country_List$Code[i], str_Country = country_List$Country[i], sex = 'M', parent_dir = "libraries")
-  table_gen(str_Country_Code = country_List$Code[i], str_Country = country_List$Country[i], sex = 'F', parent_dir = "libraries")
+  table_gen(str_Country_Code = country_List$Code[i], str_Country = country_List$Country[i], sex = 'M', parent_dir = "data")
+  table_gen(str_Country_Code = country_List$Code[i], str_Country = country_List$Country[i], sex = 'F', parent_dir = "data")
   
   
 }
