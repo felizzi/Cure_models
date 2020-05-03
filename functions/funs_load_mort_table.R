@@ -5,30 +5,35 @@
 #############################################################################
 # Functions to automate the download of mortality from the HMD, which
 #  requires prior (free) registration at https://www.mortality.org/mp/auth.pl.
-# These functions hopefully helpful but provided as a courtesy only as
+# These functions are hopefully helpful but provided as a courtesy only as
 #  model calculation should work fine using other mortality data, provided that
-#  these data are formatted as required
+#  these data are formatted as required.
 #############################################################################
 
-# Load required packages
+# Load packages -----------------------------------------------------------
 library("RCurl")
 
-# Download mortality data
+
+#  Function to download mortality data ------------------------------------
 table_gen <- function(str_Country_Code, str_Country, sex, parent_dir) {
   if (sex == "M") {
     url_name <- paste("http://www.mortality.org/hmd",
-                      str_Country_Code, "STATS/mltper_1x1.txt", sep = "/")
+      str_Country_Code, "STATS/mltper_1x1.txt",
+      sep = "/"
+    )
   } else {
     url_name <- paste("http://www.mortality.org/hmd",
-                      str_Country_Code, "STATS/fltper_1x1.txt", sep = "/")
+      str_Country_Code, "STATS/fltper_1x1.txt",
+      sep = "/"
+    )
   }
-  
+
   # Generate an authentication file, replace 'your@email.com:password' with
   #  the email and password used to register your account at the HMD
   aut_data <- getURL(url_name, userpwd = "your@email.com:password")
-  fdata    <- "data/app_aut.txt"
-  write(aut_data, file = "libraries/app_aut.txt")
-  
+  fdata <- "data/mortality/app_aut.txt"
+  write(aut_data, file = "data/mortality/app_aut.txt")
+
   # Open connection
   con  <- file(fdata, open = "r")
   line <- readLines(con)
@@ -46,7 +51,7 @@ table_gen <- function(str_Country_Code, str_Country, sex, parent_dir) {
   for (i in 4:long) {
     entries <- unlist(strsplit(line[i], " "))
     ids <- which(entries != "")
-    
+
     if (length(ids) > 0) {
       entry_values <- entries[ids]
       for (j in 1:length(ids)) {
@@ -54,18 +59,26 @@ table_gen <- function(str_Country_Code, str_Country, sex, parent_dir) {
       }
     }
   }
-  
+
   # Close connection
   close(con)
-  
-  # Write dataframe
+
+  # Write dataframes for women and men
   if (sex == "M") {
-    write.csv(aut_frame, file = paste(parent_dir, str_Country,
-                                      "Male", "Mortality.csv", sep = "/"),
-              sep = ",")
+    write.csv(aut_frame,
+      file = paste(parent_dir, str_Country,
+        "Male", "Mortality.csv",
+        sep = "/"
+      ),
+      sep = ","
+    )
   } else {
-    write.csv(aut_frame, file = paste(parent_dir, str_Country,
-                                      "Female", "Mortality.csv", sep = "/"),
-              sep = ",")
+    write.csv(aut_frame,
+      file = paste(parent_dir, str_Country,
+        "Female", "Mortality.csv",
+        sep = "/"
+      ),
+      sep = ","
+    )
   }
 }
