@@ -17,17 +17,35 @@ Anyone who's interested! The code is provided under a CC BY-NC 4.0 license.
 
 How does it work?
 ---------
-If you want to run and adapt the code on your machine, all you need is
+If you want to run and adapt the code on your machine, you need
 
 + A working [R](https://www.r-project.org/) installation
 + A couple of R packages, including (in alphabetical order)
   * _flexsurv_
   * _MASS_
   * _RCurl_
-+ A copy of the code (obviously)
 + An account with the [Human Mortality Database](https://www.mortality.org/). This is required to get high-quality mortality data to approximate background mortality in the model. Registration with the HMD is free but you can, of course, also use alternative mortality data sources (a bit of formatting might then be required to use the code presented here). As a courtesy, we wrote some code to automate the download of HMD tables. Just insert your account details into the code.
 
 Once you're good to go, there are two example scripts (both also discussed in the paper), one where the cure fraction is estimated from the available trial data and one where an external data source is used to estimate the cure fraction. The example scripts pull in all the required data and functions automatically - just make sure you don't change the folder structure.
+
+Folders and files are as follows
+
++ Analysis scripts
+  * `estimate_cure_brim3.R`: Analysis for an 'uninformed' approach, where cure fractions are *estimated* from clinical data (BRIM3 trial)
+  * `input_cure_cobrim.R`: Analysis for an 'informed' approach, where cure fractions are provided as an *input* to the estimation based on clinical data (coBRIM trial)
+  * `mortality_table_wrap.R`: Prepares mortality data for the uninformed (BRIM3) and informed (coBRIM) analyses
++ Helper functions (in 'functions/')
+  * `funs_hazard.R`: Functions to estimate mortality hazard and survival for each and across observation(s) - see the paper for their explanation and derivation
+  * `funs_likelihood.R`: Functions to estimate the likelihood functions - see the paper for their explanation and derivation
+  * `funs_load_mort_table.R`: Functions to download mortality data from the Human Mortality Database
+  * `funs_long_term_survival.R`: Helper functions to estimate hazard and survival rates
++ Data (in 'data/')
+  * `app_aut.txt`: Authentication files, change this to your specific authentication requirements
+  * `country_list.csv`: List of countries relevant to the BRIM3 and coBRIM trials
+  * 'mortality/': Gender-specific mortality data from the HMD, for countries relevant to the analyses
+  * 'trials/':
+    - `brim3_simulated.csv`: Extract of BRIM3 data, anonymized with random Gaussian noise added to demographic data
+    - `cobrim_simulated.csv`: Extract of coBRIM data, anonymized with random Gaussian noise added to demographic data
 
 Whom do I contact if I have questions or suggestions?
 ---------
