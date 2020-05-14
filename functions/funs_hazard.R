@@ -5,7 +5,7 @@
 #### the colum with the gender of the subject M/F 
 #### the year  in which the subject enetered the 
 country_map <- new.env(hash=T, parent=emptyenv())
-c_mort_list <- read.csv("libraries/CountryList.csv")
+c_mort_list <- read.csv("data/CountryList.csv")
 for (i in 1:length(c_mort_list$Code)){
   country_use <- as.character(c_mort_list$Code3[i])
   country_map[[country_use]] <- as.character(c_mort_list$Country[i])
@@ -14,7 +14,7 @@ for (i in 1:length(c_mort_list$Code)){
 country_map[["SUI"]] <- "Switzerland"
 country_map[["NED"]] <- "Netherlands"
 country_map[["GER"]] <- "Germany"
-source("functions/functions_long_term_survival.r")
+source("functions/funs_long_term_survival.R")
 hazard_time <- function(table_, evttme, sex, age, year, country_trial, country_output){
   # load in the file the tables 
   ## loop over the countries in the trial 
@@ -39,7 +39,7 @@ hazard_time <- function(table_, evttme, sex, age, year, country_trial, country_o
     
     ## load the tables 
     if (gender_in_use == "MALE" | gender_in_use == "M"){
-      table_in_use <- read.csv(paste0("libraries/",country_map[[country_in_use]],"/Male/Mortality.csv", sep = ""))
+      table_in_use <- read.csv(paste0("data/",country_map[[country_in_use]],"/Male/Mortality.csv", sep = ""))
       max_year <- max(table_in_use$Year) ## selection of the max year in case the year in the trial is missing
       if (year_in_use > max_year){ year_in_use <- max_year}
       table_in_use <- subset(table_in_use, Year == year_in_use)
@@ -48,7 +48,7 @@ hazard_time <- function(table_, evttme, sex, age, year, country_trial, country_o
 
     }
     if (gender_in_use == "FEMALE" | gender_in_use == "F"){
-      table_in_use <- read.csv(paste0("libraries/",country_map[[country_in_use]],"/Female/Mortality.csv", sep = ""))
+      table_in_use <- read.csv(paste0("data/",country_map[[country_in_use]],"/Female/Mortality.csv", sep = ""))
       max_year <- max(table_in_use$Year) ## selection of the max year in case the year in the trial is missing
       if (year_in_use > max_year){ year_in_use <- max_year}
       table_in_use <- subset(table_in_use, Year == year_in_use)
